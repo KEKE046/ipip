@@ -14,24 +14,77 @@
 #include <GLFW/glfw3.h>
 #include <queue>
 #include <httplib.h>
+#include <sstream>
 
 namespace ipip {
 
-const char help_msg[] = 
-"<html>\
-<body>\
-<h1>Welcome to ipip Server</h1>\
-<p>Please Post this url to submit data\
-</body>\
-</html>\
+const char help_msg[] = "\
+** Welcome to IPIP Server\n\
+\n\
+    Server running on `http://127.0.0.1:%d`\n\
+\n\
+--------------------------------------\n\
+** matlab code:\n\
+\n\
+url='http://127.0.0:%d';\n\
+while true\n\
+    time = now * 60 * 60 * 24;\n\
+    data = struct(...\n\
+        'time', time,...\n\
+        'fig1', struct(...\n\
+            'sin', sin(time)...\n\
+        )...\n\
+    );\n\
+    webwrite(url, data);\n\
+    pause(0.01);\n\
+end\n\
+\n\
+--------------------------------------\n\
+** python code:\n\
+\n\
+import requests, json, time, math\n\
+\n\
+url = 'http://127.0.0.1:%d'\n\
+sess = requests.Session()\n\
+\n\
+while True:\n\
+    sess.post(url, data=json.dumps({\n\
+        'time': time.time(),\n\
+        'fig1': {\n\
+            'sin': math.sin(time.time())\n\
+        }\n\
+    }))\n\
+    time.sleep(0.01)\n\
 ";
 
-    extern "C" GLFWwindow * window;
+    std::string ipipHelpMessage(int port) {
+        auto buf = new char[strlen(help_msg) + 100];
+        sprintf(buf, help_msg, port);
+        std::string res(buf);
+        delete [] buf;
+        return res;
+    }
 
-    httplib::Server server;
-    std::thread httpThread;
-    std::queue<Json::Value> serverQueue;
-    std::mutex lock;
+    static httplib::Server server;
+    static std::thread httpThread;
+    static std::queue<Json::Value> serverQueue;
+    static std::mutex lock;
+
+    static void _ipipConcatMessage(std::stringstream & ss) {}
+
+    template<class T1, class ... T>
+    static void _ipipConcatMessage(std::stringstream & ss, const T1 & msg, const T & ...  msgs) {
+        ss << msg; _ipipConcatMessage(ss, msgs ...);
+    }
+
+    template<class ... T>
+    void ipipAssert(bool cond, T ... msg) {
+        if(!cond) {
+            std::stringstream ss;
+            _ipipConcatMessage(ss, msg ...);
+            throw std::runtime_error(ss.str());
+        }
+    }
 
     bool popQueue(Json::Value & result) {
         if(serverQueue.empty()) {
@@ -57,24 +110,32 @@ const char help_msg[] =
                         return true;
                     });
                     Json::Value root;
-                    Json::Reader reader;
-                    bool parsingSuccessful = reader.parse(body, root);
-                    if (parsingSuccessful) {
+                    Json::String errors;
+                    Json::CharReaderBuilder builder;
+                    std::unique_ptr<Json::CharReader> const reader(builder.newCharReader());
+                    bool success = reader->parse(body.data(), body.data() + body.length(), &root, &errors);
+                    if (!success || !errors.empty()) {
+                        std::cout << "Error parsing json" << '\n' << body << '\n' << errors << '\n';
+                    }
+                    else {
                         lock.lock();
                         serverQueue.push(root);
                         lock.unlock();
                     }
-                    else {
-                        std::cout << "Error when parsing json" << "\n" << body << '\n';
-                    }
                 }
             });
-            server.Get("/", [](const Request& req, Response& res) {
-                res.set_content(help_msg, "text/plain");
+            server.Get("/", [=](const Request& req, Response& res) {
+                res.set_content(ipipHelpMessage(port), "text/plain");
             });
-            std::cout << "Binding server on http://localhost:" << port << std::endl;
+            // std::cout << "Binding server on http://localhost:" << port << std::endl;
+            std::cout << ipipHelpMessage(port) << std::endl;
             server.listen("0.0.0.0", port);
         });
+    }
+
+    void stopServer() {
+        server.stop();
+        httpThread.join();
     }
 
     struct Options {
@@ -146,7 +207,7 @@ const char help_msg[] =
         }
 
         void feed(double time, Json::Value value) {
-            assert(value.isArray() || value.isNumeric());
+            ipipAssert(value.isArray() || value.isNumeric(), "Invalid data", value);
             std::vector<double> _value;
             if(value.isArray()) {
                 for(int i = 0; i < value.size(); i++) {
@@ -193,11 +254,9 @@ const char help_msg[] =
         ImGui::End();
     }
 
-    void showFigure() {
+    void showFigure(int width, int height) {
         static ImVec2 size = ImVec2(400, 200);
         ImVec2 newsize = size;
-        int width, height;
-        glfwGetWindowSize(window, &width, &height);
         int tailn = std::max(1, int(width / size.x));
         int idx = 0;
         for(auto & subp: figure) {
@@ -221,7 +280,7 @@ const char help_msg[] =
                     ImPlot::SetNextPlotLimitsY(mn, mx, ImGuiCond_Always);
                 }
                 else {
-                    ImPlot::SetNextPlotLimitsX(0, option.history, option.lock_x ? ImGuiCond_Always : NULL);
+                    ImPlot::SetNextPlotLimitsX(0, option.history, option.lock_x ? ImGuiCond_Always : ImGuiCond_None);
                     ImPlot::SetNextPlotLimitsY(-5, 5);
                 }
                 bool need_vlim = false;
@@ -269,7 +328,7 @@ const char help_msg[] =
     }
 
     void feedData(Json::Value data) {
-        assert(data.isMember("time") && data["time"].isNumeric());
+        ipipAssert(data.isMember("time") && data["time"].isNumeric(), "time not found", data);
         double tm = data["time"].asDouble();
         for(std::string figName: data.getMemberNames()) {
             if(figName == "time") continue;
@@ -280,7 +339,9 @@ const char help_msg[] =
         }
     }
 
-    void updateWindow() {
+    void updateWindow(GLFWwindow * window) {
+        int width, height;
+        glfwGetWindowSize(window, &width, &height);
         showSettings();
         Json::Value data;
         while(popQueue(data)) {
@@ -291,7 +352,7 @@ const char help_msg[] =
                 std::cout << "Invalid format: " << data << std::endl;
             }
         }
-        showFigure();
+        showFigure(width, height);
     }
 
 } // namespace ipip

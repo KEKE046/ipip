@@ -105,7 +105,7 @@ int main(int argc, char** argv)
 
         // if(show_implot_window)
         //     ImPlot::ShowDemoWindow(&show_implot_window);
-        ipip::updateWindow();
+        ipip::updateWindow(window);
 
         // Rendering
         ImGui::Render();
@@ -128,5 +128,6 @@ int main(int argc, char** argv)
     glfwDestroyWindow(window);
     glfwTerminate();
 
+    ipip::stopServer();
     return 0;
 }

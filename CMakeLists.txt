@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(kk-ipip VERSION 0.0.0)
+project(ipip VERSION 0.0.0)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
@@ -12,7 +12,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 find_package(OpenGL REQUIRED)
 # find_package(glfw3 REQUIRED)
 
-set(CMAKE_CXX_FLAGS "-Wall -Wextra -O3")
+set(CMAKE_CXX_FLAGS "-O3")
 
 set(IMGUI_BACKEND glfw opengl3)
 
