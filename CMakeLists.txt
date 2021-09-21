@@ -41,3 +41,5 @@ add_executable(ipip ${IPIP_SRC})
 target_link_libraries(ipip implot jsoncpp)
 
 add_custom_target(run ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/ipip DEPENDS ipip httplib::httplib)
+
+install(TARGETS ipip RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
