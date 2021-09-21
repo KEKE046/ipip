@@ -140,7 +140,7 @@ const char help_msg[] =
             }
             else{
                 mn = 0;
-                mx = width;
+                mx = 1;
             }
             std::copy(value.begin(), value.end(), std::back_inserter(data));
         }
@@ -201,15 +201,15 @@ const char help_msg[] =
         int tailn = std::max(1, int(width / size.x));
         int idx = 0;
         for(auto & subp: figure) {
-            if(event.tile_window) {
-                ImGui::SetNextWindowSize(size, ImGuiCond_Always);
-                ImGui::SetNextWindowPos(ImVec2(idx % tailn * size.x, idx / tailn * size.y), ImGuiCond_Always);
-            }
-            else {
-                ImGui::SetNextWindowSize(size, ImGuiCond_FirstUseEver);
-                ImGui::SetNextWindowPos(ImVec2(idx % tailn * size.x, idx / tailn * size.y), ImGuiCond_FirstUseEver);
-            }
             if(ImGui::Begin(subp.name.c_str())) {
+                if(event.tile_window) {
+                    ImGui::SetWindowSize(size, ImGuiCond_Always);
+                    ImGui::SetWindowPos(ImVec2(idx % tailn * size.x, idx / tailn * size.y), ImGuiCond_Always);
+                }
+                else {
+                    ImGui::SetWindowSize(size, ImGuiCond_FirstUseEver);
+                    ImGui::SetWindowPos(ImVec2(idx % tailn * size.x, idx / tailn * size.y), ImGuiCond_FirstUseEver);
+                }
                 if(ImGui::Button(("AutoResize##" + subp.name).c_str())) {
                     double mn = 1e100, mx = -1e100;
                     for(auto & stream: subp.streams) {
@@ -236,19 +236,20 @@ const char help_msg[] =
                 if(event.colormap_changed) {
                     ImPlot::BustColorCache(plotName.c_str());
                 }
-                ImPlot::BeginPlot(plotName.c_str(), NULL, NULL, ImVec2(-1,-1));
-                ImPlot::SetLegendLocation(ImPlotLocation_East, ImPlotOrientation_Vertical, true);
-                for(auto & stream: subp.streams) {
-                    if(stream.width > 1) {
-                        ImPlot::PushColormap(option.colormap);
-                        stream.plotHeat(subp.scale[0], subp.scale[1]);
-                        ImPlot::PopColormap();
+                if(ImPlot::BeginPlot(plotName.c_str(), NULL, NULL, ImVec2(-1,-1))) {
+                    ImPlot::SetLegendLocation(ImPlotLocation_East, ImPlotOrientation_Vertical, true);
+                    for(auto & stream: subp.streams) {
+                        if(stream.width > 1) {
+                            ImPlot::PushColormap(option.colormap);
+                            stream.plotHeat(subp.scale[0], subp.scale[1]);
+                            ImPlot::PopColormap();
+                        }
+                        else {
+                            stream.plotLine();
+                        }
                     }
-                    else {
-                        stream.plotLine();
-                    }
+                    ImPlot::EndPlot();
                 }
-                ImPlot::EndPlot();
                 if(idx == 0) {
                     newsize = ImGui::GetWindowSize();
                 }
