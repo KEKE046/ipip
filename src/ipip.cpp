@@ -368,7 +368,6 @@ while True:\n\
         showSettings();
         Json::Value data;
         while(popQueue(data)) {
-            std::cout << data << std::endl;
             try {
                 feedData(data);
             }
