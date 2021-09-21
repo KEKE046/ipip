@@ -59,7 +59,7 @@ while True:\n\
 
     std::string ipipHelpMessage(int port) {
         auto buf = new char[strlen(help_msg) + 100];
-        sprintf(buf, help_msg, port);
+        sprintf(buf, help_msg, port, port, port);
         std::string res(buf);
         delete [] buf;
         return res;
