@@ -26,6 +26,8 @@ const char help_msg[] =
 </html>\
 ";
 
+    extern "C" GLFWwindow * window;
+
     httplib::Server server;
     std::thread httpThread;
     std::queue<Json::Value> serverQueue;
@@ -84,6 +86,7 @@ const char help_msg[] =
     struct Events{
         bool colormap_changed = false;
         bool history_changed = false;
+        bool tile_window = false;
     } event;
 
     struct Stream {
@@ -135,6 +138,10 @@ const char help_msg[] =
                 mx = std::max(mx, (value[0]));
                 mn = std::min(mn, (value[0]));
             }
+            else{
+                mn = 0;
+                mx = width;
+            }
             std::copy(value.begin(), value.end(), std::back_inserter(data));
         }
 
@@ -179,56 +186,77 @@ const char help_msg[] =
         if (event.colormap_changed) {
             option.colormap = (option.colormap + 1) % ImPlot::GetColormapCount();
         }
-        ImGui::Text("LockX:   "); ImGui::SameLine();
+        ImGui::Text("Tile:    "); ImGui::SameLine();
+        event.tile_window = ImGui::Button("do");
+        ImGui::Text("Lock X:  "); ImGui::SameLine();
         ImGui::Checkbox("##LockX", &option.lock_x);
         ImGui::End();
     }
 
     void showFigure() {
+        static ImVec2 size = ImVec2(400, 200);
+        ImVec2 newsize = size;
+        int width, height;
+        glfwGetWindowSize(window, &width, &height);
+        int tailn = std::max(1, int(width / size.x));
+        int idx = 0;
         for(auto & subp: figure) {
-            ImGui::SetNextWindowSize(ImVec2(400, 300));
-            ImGui::Begin(subp.name.c_str());
-            if(ImGui::Button(("AutoResize##" + subp.name).c_str())) {
-                double mn = 1e100, mx = -1e100;
-                for(auto & stream: subp.streams) {
-                    mn = std::min(mn, stream.mn);
-                    mx = std::max(mx, stream.mx);
-                }
-                if(mn > mx) {mn = -5; mx = 5;}
-                ImPlot::SetNextPlotLimitsX(0, option.history, ImGuiCond_Always);
-                ImPlot::SetNextPlotLimitsY(mn, mx, ImGuiCond_Always);
+            if(event.tile_window) {
+                ImGui::SetNextWindowSize(size, ImGuiCond_Always);
+                ImGui::SetNextWindowPos(ImVec2(idx % tailn * size.x, idx / tailn * size.y), ImGuiCond_Always);
             }
             else {
-                ImPlot::SetNextPlotLimitsX(0, option.history, option.lock_x ? ImGuiCond_Always : NULL);
-                ImPlot::SetNextPlotLimitsY(-5, 5);
+                ImGui::SetNextWindowSize(size, ImGuiCond_FirstUseEver);
+                ImGui::SetNextWindowPos(ImVec2(idx % tailn * size.x, idx / tailn * size.y), ImGuiCond_FirstUseEver);
             }
-            bool need_vlim = false;
-            for(auto & stream: subp.streams) {
-                if(stream.width > 1) need_vlim = true;
-            }
-            if(need_vlim) {
-                std::string name = "Min / Max##" + subp.name + "##VLIM";
-                ImGui::InputFloat2(name.c_str(), subp.scale);
-            }
-            std::string plotName = "##" + subp.name + "##PLOT";
-            if(event.colormap_changed) {
-                ImPlot::BustColorCache(plotName.c_str());
-            }
-            ImPlot::BeginPlot(plotName.c_str(), NULL, NULL, ImVec2(-1,-1));
-            ImPlot::SetLegendLocation(ImPlotLocation_East, ImPlotOrientation_Vertical, true);
-            for(auto & stream: subp.streams) {
-                if(stream.width > 1) {
-                    ImPlot::PushColormap(option.colormap);
-                    stream.plotHeat(subp.scale[0], subp.scale[1]);
-                    ImPlot::PopColormap();
+            if(ImGui::Begin(subp.name.c_str())) {
+                if(ImGui::Button(("AutoResize##" + subp.name).c_str())) {
+                    double mn = 1e100, mx = -1e100;
+                    for(auto & stream: subp.streams) {
+                        mn = std::min(mn, stream.mn);
+                        mx = std::max(mx, stream.mx);
+                    }
+                    if(mn > mx) {mn = -5; mx = 5;}
+                    ImPlot::SetNextPlotLimitsX(0, option.history, ImGuiCond_Always);
+                    ImPlot::SetNextPlotLimitsY(mn, mx, ImGuiCond_Always);
                 }
                 else {
-                    stream.plotLine();
+                    ImPlot::SetNextPlotLimitsX(0, option.history, option.lock_x ? ImGuiCond_Always : NULL);
+                    ImPlot::SetNextPlotLimitsY(-5, 5);
+                }
+                bool need_vlim = false;
+                for(auto & stream: subp.streams) {
+                    if(stream.width > 1) need_vlim = true;
+                }
+                if(need_vlim) {
+                    std::string name = "Min / Max##" + subp.name + "##VLIM";
+                    ImGui::InputFloat2(name.c_str(), subp.scale);
+                }
+                std::string plotName = "##" + subp.name + "##PLOT";
+                if(event.colormap_changed) {
+                    ImPlot::BustColorCache(plotName.c_str());
+                }
+                ImPlot::BeginPlot(plotName.c_str(), NULL, NULL, ImVec2(-1,-1));
+                ImPlot::SetLegendLocation(ImPlotLocation_East, ImPlotOrientation_Vertical, true);
+                for(auto & stream: subp.streams) {
+                    if(stream.width > 1) {
+                        ImPlot::PushColormap(option.colormap);
+                        stream.plotHeat(subp.scale[0], subp.scale[1]);
+                        ImPlot::PopColormap();
+                    }
+                    else {
+                        stream.plotLine();
+                    }
+                }
+                ImPlot::EndPlot();
+                if(idx == 0) {
+                    newsize = ImGui::GetWindowSize();
                 }
             }
-            ImPlot::EndPlot();
             ImGui::End();
+            idx += 1;
         }
+        size = newsize;
     }
 
     Subplot & findSubplot(std::string name) {

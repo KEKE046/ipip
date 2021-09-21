@@ -13,6 +13,8 @@
 #include <json/config.h>
 #include <iostream>
 
+GLFWwindow * window;
+
 #include "ipip.h"
 
 static void glfw_error_callback(int error, const char* description)
@@ -41,7 +43,7 @@ int main(int argc, char** argv)
     //glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // 3.0+ only
 
     // Create window with graphics context
-    GLFWwindow* window = glfwCreateWindow(1280, 720, "IPIP Window", NULL, NULL);
+    window = glfwCreateWindow(1280, 720, "IPIP Window", NULL, NULL);
     if (window == NULL)
         return 1;
     glfwMakeContextCurrent(window);
