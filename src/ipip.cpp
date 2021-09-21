@@ -237,6 +237,15 @@ while True:\n\
 
     std::vector<Subplot> figure;
     void showSettings() {
+        static bool firstRun = true;
+        static Options lastoption = option;
+        if(firstRun) {
+            if(FILE * f = fopen("ipip.dat", "r")) {
+                fread(&option, sizeof(option), 1, f);
+                fclose(f);
+            }
+        }
+        firstRun = false;
         ImGui::SetNextWindowPos(ImVec2(50, 50), ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowSize(ImVec2(600, 750), ImGuiCond_FirstUseEver);
         ImGui::Begin("Setting");
@@ -252,6 +261,13 @@ while True:\n\
         ImGui::Text("Lock X:  "); ImGui::SameLine();
         ImGui::Checkbox("##LockX", &option.lock_x);
         ImGui::End();
+        if(memcmp(&option, &lastoption, sizeof(Options)) != 0) {
+            if(FILE * f = fopen("ipip.dat", "w")) {
+                fwrite(&option, sizeof(option), 1, f);
+                fclose(f);
+            }
+            lastoption = option;
+        }
     }
 
     void showFigure(int width, int height) {
