@@ -10,3 +10,6 @@
 [submodule "cpp-httplib"]
 	path = cpp-httplib
 	url = git@github.com:yhirose/cpp-httplib.git
+[submodule "glfw"]
+	path = glfw
+	url = git@github.com:glfw/glfw.git

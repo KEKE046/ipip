@@ -5,16 +5,19 @@ project(kk-ipip VERSION 0.0.0)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-list(APPEND CMAKE_CXX_FLAGS -pthread)
-
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 find_package(OpenGL REQUIRED)
-find_package(glfw3 REQUIRED)
+# find_package(glfw3 REQUIRED)
+
+set(CMAKE_CXX_FLAGS "-Wall -Wextra -O3")
 
 set(IMGUI_BACKEND glfw opengl3)
+
+add_subdirectory(glfw EXCLUDE_FROM_ALL)
+include_directories(glfw/include)
 
 aux_source_directory(imgui IMGUI_SRC)
 foreach(BAK IN ITEMS ${IMGUI_BACKEND})
@@ -35,6 +38,6 @@ include_directories(cpp-httplib)
 
 aux_source_directory(src IPIP_SRC)
 add_executable(ipip ${IPIP_SRC})
-target_link_libraries(ipip implot jsoncpp_lib)
+target_link_libraries(ipip implot jsoncpp)
 
 add_custom_target(run ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/ipip DEPENDS ipip httplib::httplib)

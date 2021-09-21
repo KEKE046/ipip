@@ -17,6 +17,15 @@
 
 namespace ipip {
 
+const char help_msg[] = 
+"<html>\
+<body>\
+<h1>Welcome to ipip Server</h1>\
+<p>Please Post this url to submit data\
+</body>\
+</html>\
+";
+
     httplib::Server server;
     std::thread httpThread;
     std::queue<Json::Value> serverQueue;
@@ -58,12 +67,11 @@ namespace ipip {
                     }
                 }
             });
-            std::cout << "Binding server on localhost:" << port << std::endl;
-            server.bind_to_port("0.0.0.0", port);
-            server.bind_to_port("[::]", port);
-            if(!server.listen_after_bind()) {
-                throw std::runtime_error("unable to launch server");
-            }
+            server.Get("/hi", [](const Request& req, Response& res) {
+                res.set_content(help_msg, "text/plain");
+            });
+            std::cout << "Binding server on http://localhost:" << port << std::endl;
+            server.listen("0.0.0.0", port);
         });
     }
 
