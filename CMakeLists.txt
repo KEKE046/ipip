@@ -5,6 +5,8 @@ project(kk-ipip VERSION 0.0.0)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+list(APPEND CMAKE_CXX_FLAGS -pthread)
+
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -28,9 +30,11 @@ target_include_directories(implot PUBLIC implot imgui)
 target_link_libraries(implot imgui)
 
 add_subdirectory(jsoncpp EXCLUDE_FROM_ALL)
+add_subdirectory(cpp-httplib EXCLUDE_FROM_ALL)
+include_directories(cpp-httplib)
 
 aux_source_directory(src IPIP_SRC)
 add_executable(ipip ${IPIP_SRC})
 target_link_libraries(ipip implot jsoncpp_lib)
 
-add_custom_target(run ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/ipip DEPENDS ipip)
+add_custom_target(run ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/ipip DEPENDS ipip httplib::httplib)

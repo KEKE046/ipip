@@ -12,12 +12,60 @@
 #include <iterator>
 #include <iostream>
 #include <GLFW/glfw3.h>
-
-#include <implot_internal.h>
-namespace ImPlot {
-}
+#include <queue>
+#include <httplib.h>
 
 namespace ipip {
+
+    httplib::Server server;
+    std::thread httpThread;
+    std::queue<Json::Value> serverQueue;
+    std::mutex lock;
+
+    bool popQueue(Json::Value & result) {
+        if(serverQueue.empty()) {
+            return false;
+        }
+        lock.lock();
+        result = serverQueue.front();
+        serverQueue.pop();
+        lock.unlock();
+        return true;
+    }
+
+    void initServer(int port) {
+        httpThread = std::thread([&,port]() {
+            using namespace httplib;
+            server.Post("/", [&](const Request &req, Response &res, const ContentReader &content_reader) {
+                if (req.is_multipart_form_data()) {
+                    throw std::runtime_error("not implemented");
+                } else {
+                    std::string body;
+                    content_reader([&](const char *data, size_t data_length) {
+                        body.append(data, data_length);
+                        return true;
+                    });
+                    Json::Value root;
+                    Json::Reader reader;
+                    bool parsingSuccessful = reader.parse(body, root);
+                    if (parsingSuccessful) {
+                        lock.lock();
+                        serverQueue.push(root);
+                        lock.unlock();
+                    }
+                    else {
+                        std::cout << "Error when parsing json" << "\n" << body << '\n';
+                    }
+                }
+            });
+            std::cout << "Binding server on localhost:" << port << std::endl;
+            server.bind_to_port("0.0.0.0", port);
+            server.bind_to_port("[::]", port);
+            if(!server.listen_after_bind()) {
+                throw std::runtime_error("unable to launch server");
+            }
+        });
+    }
 
     struct Options {
         float history = 5;
@@ -53,8 +101,6 @@ namespace ipip {
             ImPlot::PlotLine(name.c_str(), tickmod.data(), data.data(), tickmod.size(), 0, sizeof(float));
         }
 
-        double ymin{0}, ymax{0};
-
         void plotHeat(float &scale_min, float &scale_max) {
             if(data.size() > buffer.size()) {
                 buffer.resize(data.size());
@@ -68,42 +114,27 @@ namespace ipip {
                 }
             }
             ImPlot::PlotHeatmap(name.c_str(), buffer.data(), width, data.size() / width, scale_min, scale_max,
-                "", ImPlotPoint(tickmod.size() ? tickmod.front() : 0, ymin), ImPlotPoint(tickmod.size() ? tickmod.back() : 0, ymax==ymin ? width : ymax));
+                "", ImPlotPoint(tickmod.size() ? tickmod.front() : 0, 0), ImPlotPoint(tickmod.size() ? tickmod.back() : 0, 1));
         }
 
-        void feed(double time, const std::vector<double> & newdata, double _ymin=0, double _ymax=0) {
+        void feed(double time, const std::vector<double> & value) {
             updateBuffer(time);
-            width = newdata.size();
-            std::copy(newdata.begin(), newdata.end(), std::back_inserter(data));
-            ymin = _ymin; ymax = _ymax;
+            width = value.size();
+            std::copy(value.begin(), value.end(), std::back_inserter(data));
         }
 
-        void feed(Json::Value value) {
-            assert(value.isMember("name")  && value["name"].isString());
-            assert(value.isMember("time")  && value["time"].isNumeric());
-            assert(value.isMember("value") && (value["value"].isArray() || value["value"].isNumeric()));
-            double time = value["time"].asDouble();
-            double _ymin = ymin, _ymax = ymax;
-            Json::Value & newdata = value["value"];
-            std::vector<double> _newdata;
-            if(newdata.isArray()) {
-                int size = newdata.size();
-                for(int i = 0; i < size; i++) {
-                    _newdata.push_back(newdata[i].asDouble());
-                }
-                if(value.isMember("ymin")) {
-                    assert(value["ymin"].isNumeric());
-                    _ymin = value["ymin"].asDouble();
-                }
-                if(value.isMember("ymax")) {
-                    assert(value["ymax"].isNumeric());
-                    _ymax = value["ymax"].asDouble();
+        void feed(double time, Json::Value value) {
+            assert(value.isArray() || value.isNumeric());
+            std::vector<double> _value;
+            if(value.isArray()) {
+                for(int i = 0; i < value.size(); i++) {
+                    _value.push_back(value[i].asDouble());
                 }
             }
-            else if(newdata.isNumeric()) {
-                _newdata.push_back(newdata.asDouble());
+            else if(value.isNumeric()) {
+                _value.push_back(value.asDouble());
             }
-            feed(time, _newdata, _ymin, _ymax);
+            feed(time, _value);
         }
     };
 
@@ -183,46 +214,28 @@ namespace ipip {
     }
 
     void feedData(Json::Value data) {
+        assert(data.isMember("time") && data["time"].isNumeric());
+        double tm = data["time"].asDouble();
         for(std::string figName: data.getMemberNames()) {
+            if(figName == "time") continue;
             auto & subp = findSubplot(figName);
             for(std::string streamName: data[figName].getMemberNames()) {
-                data[figName][streamName]["name"] = streamName;
-                subp.findStream(streamName).feed(data[figName][streamName]);
+                subp.findStream(streamName).feed(tm, data[figName][streamName]);
             }
         }
     }
 
-    Json::Value createData() {
-        float tm = glfwGetTime();
-        Json::Value stream1;
-        stream1["time"] = tm;
-        stream1["value"] = sin(tm);
-        Json::Value stream2;
-        stream2["time"] = tm;
-        stream2["value"] = cos(tm);
-        Json::Value stream3;
-        stream3["time"] = tm;
-        stream3["value"] = tan(tm);
-        Json::Value stream4;
-        stream4["time"] = tm;
-        stream4["value"] = Json::Value(Json::arrayValue);
-        stream4["value"].append(sin(tm));
-        stream4["value"].append(cos(tm));
-        Json::Value fig1;
-        fig1["sin"] = stream1;
-        fig1["cos"] = stream2;
-        Json::Value fig2;
-        fig2["tan"] = stream3;
-        fig2["heat"] = stream4;
-        Json::Value root;
-        root["fig1"] = fig1;
-        root["fig2"] = fig2;
-        return root;
-    }
-
     void updateWindow() {
         showSettings();
-        feedData(createData());
+        Json::Value data;
+        while(popQueue(data)) {
+            try {
+                feedData(data);
+            }
+            catch(std::runtime_error e) {
+                std::cout << "Invalid format: " << data << std::endl;
+            }
+        }
         showFigure();
     }
 

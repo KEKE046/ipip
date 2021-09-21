@@ -9,7 +9,9 @@
 #include <backends/imgui_impl_opengl3.h>
 #include <GLFW/glfw3.h> // Will drag system OpenGL headers
 #include <cstdio>
+#include <cstdlib>
 #include <json/config.h>
+#include <iostream>
 
 #include "ipip.h"
 
@@ -18,8 +20,14 @@ static void glfw_error_callback(int error, const char* description)
     fprintf(stderr, "Glfw Error %d: %s\n", error, description);
 }
 
-int main(int, char**)
+int main(int argc, char** argv)
 {
+    if(argc > 2) {
+        ipip::initServer(std::atoi(argv[1]));
+    }
+    else {
+        ipip::initServer(1132);
+    }
     // Setup window
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit())
