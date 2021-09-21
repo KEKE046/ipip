@@ -67,7 +67,7 @@ const char help_msg[] =
                     }
                 }
             });
-            server.Get("/hi", [](const Request& req, Response& res) {
+            server.Get("/", [](const Request& req, Response& res) {
                 res.set_content(help_msg, "text/plain");
             });
             std::cout << "Binding server on http://localhost:" << port << std::endl;
