@@ -89,6 +89,7 @@ const char help_msg[] =
     struct Stream {
         float span{60};
         int width{1};
+        double mx{-1e100}, mn{1e100};
         std::string name{};
         std::vector<double> data;
         std::vector<double> tickmod;
@@ -101,6 +102,8 @@ const char help_msg[] =
             if (!tickmod.empty() && fmod(time, span) < tickmod.back()) {
                 tickmod.resize(0);
                 data.resize(0);
+                mx = -1e100;
+                mn = +1e100;
             }
             tickmod.push_back(fmod(time, span));
         }
@@ -128,6 +131,10 @@ const char help_msg[] =
         void feed(double time, const std::vector<double> & value) {
             updateBuffer(time);
             width = value.size();
+            if(width == 1) {
+                mx = std::max(mx, (value[0]));
+                mn = std::min(mn, (value[0]));
+            }
             std::copy(value.begin(), value.end(), std::back_inserter(data));
         }
 
@@ -179,22 +186,33 @@ const char help_msg[] =
 
     void showFigure() {
         for(auto & subp: figure) {
+            ImGui::SetNextWindowSize(ImVec2(400, 300));
             ImGui::Begin(subp.name.c_str());
-            std::string plotName = "##" + subp.name + "##PLOT";
-            ImPlot::SetNextPlotLimitsX(0, option.history, option.lock_x ? ImGuiCond_Always : NULL);
-            ImPlot::SetNextPlotLimitsY(0,1);
-            if(event.colormap_changed) {
-                ImPlot::BustColorCache(plotName.c_str());
+            if(ImGui::Button(("AutoResize##" + subp.name).c_str())) {
+                double mn = 1e100, mx = -1e100;
+                for(auto & stream: subp.streams) {
+                    mn = std::min(mn, stream.mn);
+                    mx = std::max(mx, stream.mx);
+                }
+                if(mn > mx) {mn = -5; mx = 5;}
+                ImPlot::SetNextPlotLimitsX(0, option.history, ImGuiCond_Always);
+                ImPlot::SetNextPlotLimitsY(mn, mx, ImGuiCond_Always);
+            }
+            else {
+                ImPlot::SetNextPlotLimitsX(0, option.history, option.lock_x ? ImGuiCond_Always : NULL);
+                ImPlot::SetNextPlotLimitsY(-5, 5);
             }
             bool need_vlim = false;
             for(auto & stream: subp.streams) {
-                if(stream.width > 1) {
-                    need_vlim = true;
-                }
+                if(stream.width > 1) need_vlim = true;
             }
             if(need_vlim) {
                 std::string name = "Min / Max##" + subp.name + "##VLIM";
                 ImGui::InputFloat2(name.c_str(), subp.scale);
+            }
+            std::string plotName = "##" + subp.name + "##PLOT";
+            if(event.colormap_changed) {
+                ImPlot::BustColorCache(plotName.c_str());
             }
             ImPlot::BeginPlot(plotName.c_str(), NULL, NULL, ImVec2(-1,-1));
             ImPlot::SetLegendLocation(ImPlotLocation_East, ImPlotOrientation_Vertical, true);
