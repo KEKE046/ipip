@@ -351,8 +351,13 @@ while True:\n\
         for(std::string figName: data.getMemberNames()) {
             if(figName == "time") continue;
             auto & subp = findSubplot(figName);
-            for(std::string streamName: data[figName].getMemberNames()) {
-                subp.findStream(streamName).feed(tm, data[figName][streamName]);
+            if(data[figName].isObject()) {
+                for(std::string streamName: data[figName].getMemberNames()) {
+                    subp.findStream(streamName).feed(tm, data[figName][streamName]);
+                }
+            }
+            else {
+                subp.findStream("data").feed(tm, data[figName]);
             }
         }
     }
@@ -363,6 +368,7 @@ while True:\n\
         showSettings();
         Json::Value data;
         while(popQueue(data)) {
+            std::cout << data << std::endl;
             try {
                 feedData(data);
             }
