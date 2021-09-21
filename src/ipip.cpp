@@ -257,9 +257,11 @@ while True:\n\
             option.colormap = (option.colormap + 1) % ImPlot::GetColormapCount();
         }
         ImGui::Text("Tile:    "); ImGui::SameLine();
-        event.tile_window = ImGui::Button("do");
+        event.tile_window = ImGui::Button("do##SettingTile");
         ImGui::Text("Lock X:  "); ImGui::SameLine();
         ImGui::Checkbox("##LockX", &option.lock_x);
+        ImGui::Text("Clear:   "); ImGui::SameLine();
+        if(ImGui::Button("do##SettingClear")) figure.clear();
         ImGui::End();
         if(memcmp(&option, &lastoption, sizeof(Options)) != 0) {
             if(FILE * f = fopen("ipip.dat", "w")) {
