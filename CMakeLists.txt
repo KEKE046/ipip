@@ -36,8 +36,13 @@ add_subdirectory(jsoncpp EXCLUDE_FROM_ALL)
 add_subdirectory(cpp-httplib EXCLUDE_FROM_ALL)
 include_directories(cpp-httplib)
 
+aux_source_directory(bin2c BIN2C_SRC)
+add_executable(bin2c ${BIN2C_SRC})
+
+add_custom_command(OUTPUT help.c COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/bin2c ${PROJECT_SOURCE_DIR}/src/help.html help.c HELP_HTML)
+
 aux_source_directory(src IPIP_SRC)
-add_executable(ipip ${IPIP_SRC})
+add_executable(ipip ${IPIP_SRC} help.c)
 target_link_libraries(ipip implot jsoncpp)
 
 add_custom_target(run ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/ipip DEPENDS ipip httplib::httplib)

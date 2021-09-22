@@ -13,3 +13,6 @@
 [submodule "glfw"]
 	path = glfw
 	url = git@github.com:glfw/glfw.git
+[submodule "bin2c"]
+	path = bin2c
+	url = git@github.com:gwilymk/bin2c.git

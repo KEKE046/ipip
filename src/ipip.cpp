@@ -18,7 +18,7 @@
 
 namespace ipip {
 
-const char help_msg[] = "\
+const char HELP_CONSOLE[] = "\
 ** Welcome to IPIP Server\n\
 \n\
     Server running on `http://127.0.0.1:%d`\n\
@@ -57,12 +57,17 @@ while True:\n\
     time.sleep(0.01)\n\
 ";
 
-    std::string ipipHelpMessage(int port) {
-        auto buf = new char[strlen(help_msg) + 100];
-        sprintf(buf, help_msg, port, port, port);
-        std::string res(buf);
-        delete [] buf;
-        return res;
+    extern "C" const char HELP_HTML[];
+    extern "C" const int HELP_HTML_length;
+
+    std::string ipipHelpMessage(const char * data, int len, int port) {
+        std::string msg(data, data + len);
+        for(int i = 0; i < msg.length(); i++) {
+            if(msg[i] == '%' && msg[i + 1] == 'd') {
+                msg.replace(i, 2, std::to_string(port));
+            }
+        }
+        return msg;
     }
 
     static httplib::Server server;
@@ -125,10 +130,9 @@ while True:\n\
                 }
             });
             server.Get("/", [=](const Request& req, Response& res) {
-                res.set_content(ipipHelpMessage(port), "text/plain");
+                res.set_content(ipipHelpMessage(HELP_HTML, HELP_HTML_length, port), "text/html");
             });
-            // std::cout << "Binding server on http://localhost:" << port << std::endl;
-            std::cout << ipipHelpMessage(port) << std::endl;
+            std::cout << ipipHelpMessage(HELP_CONSOLE, strlen(HELP_CONSOLE), port) << std::endl;
             server.listen("0.0.0.0", port);
         });
     }
