@@ -251,7 +251,7 @@ while True:\n\
         }
         firstRun = false;
         ImGui::SetNextWindowPos(ImVec2(50, 50), ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowSize(ImVec2(600, 750), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize(ImVec2(350, 150), ImGuiCond_FirstUseEver);
         ImGui::Begin("Setting");
         ImGui::Text("History: "); ImGui::SameLine();
         event.history_changed  = ImGui::SliderFloat("##History", &option.history, 1, 120);
