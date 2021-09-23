@@ -50,11 +50,13 @@ while true
 end
 ```
 
+You can set value to `null` to avoid subplot update.
+
 ## Install
 
 ```bash
 mkdir build && cd build
-make && sudo make install
+cmake --build . && cmake --install .
 ```
 
 ## Run
