@@ -18,7 +18,7 @@ set(CMAKE_CXX_FLAGS "-O3")
 
 set(IMGUI_BACKEND glfw opengl3)
 
-add_subdirectory(glfw EXCLUDE_FROM_ALL)
+add_subdirectory(glfw)
 include_directories(glfw/include)
 
 aux_source_directory(imgui IMGUI_SRC)
@@ -34,8 +34,11 @@ add_library(implot ${IMPLOT_SRC})
 target_include_directories(implot PUBLIC implot imgui)
 target_link_libraries(implot imgui)
 
-add_subdirectory(jsoncpp EXCLUDE_FROM_ALL)
-add_subdirectory(cpp-httplib EXCLUDE_FROM_ALL)
+add_subdirectory(jsoncpp)
+if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+include_directories(jsoncpp/include)
+endif()
+add_subdirectory(cpp-httplib)
 include_directories(cpp-httplib)
 
 aux_source_directory(bin2c BIN2C_SRC)
@@ -49,7 +52,12 @@ endif()
 
 aux_source_directory(src IPIP_SRC)
 add_executable(ipip ${IPIP_SRC} help.c)
+
+if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+target_link_libraries(ipip implot jsoncpp_static)
+else ()
 target_link_libraries(ipip implot jsoncpp)
+endif ()
 
 add_custom_target(run ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/ipip DEPENDS ipip httplib::httplib)
 
