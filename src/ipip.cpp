@@ -355,9 +355,12 @@ while True:\n\
         for(std::string figName: data.getMemberNames()) {
             if(figName == "time") continue;
             auto & subp = findSubplot(figName);
+            if(data[figName].isNull()) continue;
             if(data[figName].isObject()) {
                 for(std::string streamName: data[figName].getMemberNames()) {
-                    subp.findStream(streamName).feed(tm, data[figName][streamName]);
+                    auto & subplotData = data[figName][streamName];
+                    if(subplotData.isNull()) continue;
+                    subp.findStream(streamName).feed(tm, subplotData);
                 }
             }
             else {
