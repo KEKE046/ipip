@@ -56,7 +56,7 @@ You can set value to `null` to avoid subplot update.
 
 ```bash
 mkdir build && cd build
-cmake --build . && cmake --install .
+cmake --build . && sudo cmake --install .
 ```
 
 ## Run
