@@ -12,6 +12,8 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 find_package(OpenGL REQUIRED)
 # find_package(glfw3 REQUIRED)
 
+message(${CMAKE_SYSTEM_NAME})
+
 set(CMAKE_CXX_FLAGS "-O3")
 
 set(IMGUI_BACKEND glfw opengl3)
@@ -39,7 +41,11 @@ include_directories(cpp-httplib)
 aux_source_directory(bin2c BIN2C_SRC)
 add_executable(bin2c ${BIN2C_SRC})
 
+if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+add_custom_command(OUTPUT help.c COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Debug/bin2c.exe ${PROJECT_SOURCE_DIR}/src/help.html help.c HELP_HTML)
+else()
 add_custom_command(OUTPUT help.c COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/bin2c ${PROJECT_SOURCE_DIR}/src/help.html help.c HELP_HTML)
+endif()
 
 aux_source_directory(src IPIP_SRC)
 add_executable(ipip ${IPIP_SRC} help.c)
