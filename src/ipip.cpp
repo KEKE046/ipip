@@ -379,7 +379,7 @@ while True:\n\
                 feedData(data);
             }
             catch(std::runtime_error e) {
-                std::cout << "Invalid format: " << data << std::endl;
+                std::cout << "Invalid format: " << e.what() << std::endl << data << std::endl;
             }
         }
         showFigure(width, height);
