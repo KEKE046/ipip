@@ -1,18 +1,18 @@
 [submodule "implot"]
 	path = implot
-	url = git@github.com:epezent/implot.git
+	url = https://github.com/epezent/implot.git
 [submodule "imgui"]
 	path = imgui
-	url = git@github.com:ocornut/imgui.git
+	url = https://github.com/ocornut/imgui.git
 [submodule "jsoncpp"]
 	path = jsoncpp
-	url = git@github.com:open-source-parsers/jsoncpp.git
+	url = https://github.com/open-source-parsers/jsoncpp.git
 [submodule "cpp-httplib"]
 	path = cpp-httplib
-	url = git@github.com:yhirose/cpp-httplib.git
+	url = https://github.com/yhirose/cpp-httplib.git
 [submodule "glfw"]
 	path = glfw
-	url = git@github.com:glfw/glfw.git
+	url = https://github.com/glfw/glfw.git
 [submodule "bin2c"]
 	path = bin2c
-	url = git@github.com:gwilymk/bin2c.git
+	url = https://github.com/gwilymk/bin2c.git
