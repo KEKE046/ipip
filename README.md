@@ -55,6 +55,10 @@ You can set value to `null` to avoid subplot update.
 ## Install
 
 ```bash
+git clone https://github.com/KEKE046/ipip.git
+cd ipip
+git submodule init
+git submodule update
 mkdir build && cd build
 cmake --build . && sudo cmake --install .
 ```
