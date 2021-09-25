@@ -14,6 +14,7 @@
 #include <GLFW/glfw3.h>
 #include "help.h"
 #include "server.h"
+#include "heatmap.h"
 
 namespace ipip {
 
@@ -21,6 +22,7 @@ namespace ipip {
         float history = 5;
         int colormap = 5;
         bool lock_x = true;
+        bool show_perf = false;
     } option;
 
     struct Events{
@@ -57,14 +59,8 @@ namespace ipip {
             if(data.size() > buffer.size()) {
                 buffer.resize(data.size());
             }
-            int n = data.size() / width;
-            for(int i = 0; i < n; i++) {
-                for(int j = 0; j < width; j++) {
-                    buffer[j * n + i] = data[i * width + j];
-                }
-            }
-            ImPlot::PlotHeatmap(name.c_str(), buffer.data(), width, data.size() / width, vmn, vmx,
-                "", ImPlotPoint(tickmod.size() ? tickmod.front() : 0, 0), ImPlotPoint(tickmod.size() ? tickmod.back() : 0, 1));
+            ImPlot::PlotHeatmapTranspose(name.c_str(), data.data(), width, data.size() / width, vmn, vmx,
+                "", ImPlotPoint(tickmod.size() ? tickmod.front() : 0, 1), ImPlotPoint(tickmod.size() ? tickmod.back() : 0, 0));
         }
 
         void feed(double time, const std::vector<double> & value) {
@@ -75,6 +71,11 @@ namespace ipip {
                 vmn = std::min(vmn, v);
             }
             std::copy(value.begin(), value.end(), std::back_inserter(data));
+        }
+
+        void feed(double time, double value) {
+            std::vector<double> data{value};
+            feed(time, data);
         }
 
         void feed(double time, Json::Value value) {
@@ -94,19 +95,21 @@ namespace ipip {
 
     struct Subplot {
         std::string name;
+        bool stream_changed;
         float scale[2]{0,0};
         std::vector<Stream> streams;
-        Subplot(std::string name): name{name}{};
+        Subplot(std::string name): name{name}, stream_changed{false}{};
         Stream & findStream(std::string name) {
             for(auto & stream: streams)
                 if(stream.name == name)
                     return stream;
             streams.emplace_back(name);
+            stream_changed = true;
             return streams.back();
         }
     };
 
-    std::vector<Subplot> figure;
+    static std::vector<Subplot> figure;
     void showSettings() {
         static bool firstRun = true;
         static Options lastoption = option;
@@ -127,6 +130,8 @@ namespace ipip {
         if (event.colormap_changed) {
             option.colormap = (option.colormap + 1) % ImPlot::GetColormapCount();
         }
+        ImGui::Text("ShowPerf:"); ImGui::SameLine();
+        ImGui::Checkbox("##ShowPerf", &option.show_perf);
         ImGui::Text("Tile:    "); ImGui::SameLine();
         event.tile_window = ImGui::Button("do##SettingTile");
         ImGui::Text("Lock X:  "); ImGui::SameLine();
@@ -140,6 +145,36 @@ namespace ipip {
                 fclose(f);
             }
             lastoption = option;
+        }
+    }
+
+    void showPerf(bool hasData) {
+        static Stream perfStream("RenderTime");
+        static Stream dataRecv("DataLatency");
+        static float lastTime = -1;
+        static float lastData = -1;
+        if(lastTime == -1) {
+            lastTime = glfwGetTime();
+        }
+        float curTime = glfwGetTime();
+        perfStream.feed(curTime, curTime - lastTime);
+        if(hasData) {
+            if(lastData == -1) {
+                lastData = curTime;
+            }
+            dataRecv.feed(curTime, curTime - lastData);
+            lastData = curTime;
+        }
+        lastTime = curTime;
+        ImGui::SetNextWindowSize(ImVec2(400, 200), ImGuiCond_FirstUseEver);
+        if(option.show_perf && ImGui::Begin("Performance")){
+            ImPlot::SetNextPlotLimitsX(0, option.history, ImGuiCond_Always);
+            if(ImPlot::BeginPlot("PerformancePlot", NULL, NULL, ImVec2(-1,-1))) {
+                perfStream.plotLine();
+                dataRecv.plotLine();
+                ImPlot::EndPlot();
+            }
+            ImGui::End();
         }
     }
 
@@ -189,7 +224,10 @@ namespace ipip {
                     ImPlot::BustColorCache(plotName.c_str());
                 }
                 if(ImPlot::BeginPlot(plotName.c_str(), NULL, NULL, ImVec2(-1,-1))) {
-                    ImPlot::SetLegendLocation(ImPlotLocation_East, ImPlotOrientation_Vertical, true);
+                    if(subp.stream_changed) {
+                        ImPlot::SetLegendLocation(ImPlotLocation_East, ImPlotOrientation_Vertical, true);
+                        subp.stream_changed = false;
+                    }
                     for(auto & stream: subp.streams) {
                         if(stream.width > 1) {
                             ImPlot::PushColormap(option.colormap);
@@ -243,7 +281,9 @@ namespace ipip {
         glfwGetWindowSize(window, &width, &height);
         showSettings();
         Json::Value data;
+        bool hasData = false;
         while(popQueue(data)) {
+            hasData = true;
             try {
                 feedData(data);
             }
@@ -252,6 +292,7 @@ namespace ipip {
             }
         }
         showFigure(width, height);
+        showPerf(hasData);
     }
 
 } // namespace ipip

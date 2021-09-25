@@ -42,8 +42,11 @@ int main(int argc, char** argv)
     //glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
     //glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // 3.0+ only
 
+    GLFWmonitor * monitor = glfwGetPrimaryMonitor();
+    int x, y, w, h;
+    glfwGetMonitorWorkarea(monitor, &x, &y, &w, &h);
     // Create window with graphics context
-    window = glfwCreateWindow(1280, 720, "IPIP Window", NULL, NULL);
+    window = glfwCreateWindow(w, h, "IPIP Window", NULL, NULL);
     if (window == NULL)
         return 1;
     glfwMakeContextCurrent(window);
@@ -102,6 +105,8 @@ int main(int argc, char** argv)
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
+
+        // ImGui::ShowDemoWindow(nullptr);
 
         // if(show_implot_window)
         //     ImPlot::ShowDemoWindow(&show_implot_window);
