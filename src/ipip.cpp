@@ -32,7 +32,7 @@ namespace ipip {
     struct Stream {
         float span{60};
         int width{1};
-        double mx{-1e100}, mn{1e100};
+        double vmx{-1e100}, vmn{1e100};
         std::string name{};
         std::vector<double> data;
         std::vector<double> tickmod;
@@ -45,14 +45,12 @@ namespace ipip {
             if (!tickmod.empty() && fmod(time, span) < tickmod.back()) {
                 tickmod.resize(0);
                 data.resize(0);
-                mx = -1e100;
-                mn = +1e100;
             }
             tickmod.push_back(fmod(time, span));
         }
 
         void plotLine() {
-            ImPlot::PlotLine(name.c_str(), tickmod.data(), data.data(), tickmod.size(), 0, sizeof(float));
+            ImPlot::PlotLine(name.c_str(), tickmod.data(), data.data(), tickmod.size(), 0, sizeof(double));
         }
 
         void plotHeat(float &scale_min, float &scale_max) {
@@ -63,24 +61,18 @@ namespace ipip {
             for(int i = 0; i < n; i++) {
                 for(int j = 0; j < width; j++) {
                     buffer[j * n + i] = data[i * width + j];
-                    scale_min = std::min(scale_min, float(data[i * width + j]));
-                    scale_max = std::max(scale_max, float(data[i * width + j]));
                 }
             }
-            ImPlot::PlotHeatmap(name.c_str(), buffer.data(), width, data.size() / width, scale_min, scale_max,
+            ImPlot::PlotHeatmap(name.c_str(), buffer.data(), width, data.size() / width, vmn, vmx,
                 "", ImPlotPoint(tickmod.size() ? tickmod.front() : 0, 0), ImPlotPoint(tickmod.size() ? tickmod.back() : 0, 1));
         }
 
         void feed(double time, const std::vector<double> & value) {
             updateBuffer(time);
             width = value.size();
-            if(width == 1) {
-                mx = std::max(mx, (value[0]));
-                mn = std::min(mn, (value[0]));
-            }
-            else{
-                mn = 0;
-                mx = 1;
+            for(auto v: value) {
+                vmx = std::max(vmx, v);
+                vmn = std::min(vmn, v);
             }
             std::copy(value.begin(), value.end(), std::back_inserter(data));
         }
@@ -127,7 +119,7 @@ namespace ipip {
         firstRun = false;
         ImGui::SetNextWindowPos(ImVec2(50, 50), ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowSize(ImVec2(350, 150), ImGuiCond_FirstUseEver);
-        ImGui::Begin("Setting");
+        ImGui::Begin("Setting", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::Text("History: "); ImGui::SameLine();
         event.history_changed  = ImGui::SliderFloat("##History", &option.history, 1, 120);
         ImGui::Text("ColorMap:"); ImGui::SameLine();
@@ -166,15 +158,9 @@ namespace ipip {
                     ImGui::SetWindowSize(size, ImGuiCond_FirstUseEver);
                     ImGui::SetWindowPos(ImVec2(idx % tailn * size.x, idx / tailn * size.y), ImGuiCond_FirstUseEver);
                 }
-                if(ImGui::Button(("AutoResize##" + subp.name).c_str())) {
-                    double mn = 1e100, mx = -1e100;
-                    for(auto & stream: subp.streams) {
-                        mn = std::min(mn, stream.mn);
-                        mx = std::max(mx, stream.mx);
-                    }
-                    if(mn > mx) {mn = -5; mx = 5;}
+                if(ImGui::Button(("FitY##" + subp.name).c_str())) {
                     ImPlot::SetNextPlotLimitsX(0, option.history, ImGuiCond_Always);
-                    ImPlot::SetNextPlotLimitsY(mn, mx, ImGuiCond_Always);
+                    ImPlot::FitNextPlotAxes(false, true);
                 }
                 else {
                     ImPlot::SetNextPlotLimitsX(0, option.history, option.lock_x ? ImGuiCond_Always : ImGuiCond_None);
@@ -185,8 +171,18 @@ namespace ipip {
                     if(stream.width > 1) need_vlim = true;
                 }
                 if(need_vlim) {
-                    std::string name = "Min / Max##" + subp.name + "##VLIM";
+                    std::string name = "MinV/MaxV##" + subp.name + "##VLIM";
+                    ImGui::SameLine();
                     ImGui::InputFloat2(name.c_str(), subp.scale);
+                    ImGui::SameLine();
+                    if(ImGui::Button(("FitV##" + subp.name).c_str())) {
+                        for(auto & stream: subp.streams) {
+                            if(stream.width > 1) {
+                                subp.scale[0] = std::min((double)subp.scale[0], stream.vmn);
+                                subp.scale[1] = std::max((double)subp.scale[0], stream.vmx);
+                            }
+                        }
+                    }
                 }
                 std::string plotName = "##" + subp.name + "##PLOT";
                 if(event.colormap_changed) {
@@ -206,9 +202,7 @@ namespace ipip {
                     }
                     ImPlot::EndPlot();
                 }
-                if(idx == 0) {
-                    newsize = ImGui::GetWindowSize();
-                }
+                if(idx == 0) newsize = ImGui::GetWindowSize();
             }
             ImGui::End();
             idx += 1;
