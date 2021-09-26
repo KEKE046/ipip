@@ -70,7 +70,6 @@ Please see the [Release Page](https://github.com/KEKE046/ipip/releases)
 
 ```bash
 ipip #run on port 1132
-ipip 2333 # run on port 2333
 ```
 
 ## Build
