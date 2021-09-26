@@ -64,7 +64,7 @@ end
 
 ## Binaries
 
-Please see the [Release Page](https://github.com/KEKE046/ipip/releases)
+Please see the Release Page. Just in the rightside of the filelist.
 
 ## Run
 

@@ -62,7 +62,7 @@ end
 
 ## Binaries
 
-你可以在 [Release 页面](https://github.com/KEKE046/ipip/releases) 中找到编译好的可执行文件。
+你可以在Release 页面（就在文件列表的右边）中找到编译好的可执行文件。
 
 ## 运行
 
