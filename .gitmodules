@@ -5,20 +5,15 @@
 [submodule "imgui"]
 	path = imgui
 	url = https://github.com/ocornut/imgui.git
-	commit = c6ca327fb2c4a0bb35b92a1ca8633991379463df
 [submodule "jsoncpp"]
 	path = jsoncpp
 	url = https://github.com/open-source-parsers/jsoncpp.git
-	commit = 94a6220f7c738d6711d325fd29bb8a60b97fd77e
 [submodule "cpp-httplib"]
 	path = cpp-httplib
 	url = https://github.com/yhirose/cpp-httplib.git
-	commit = 503aa6132515c27946e1f679266e2377d37527ab
 [submodule "glfw"]
 	path = glfw
 	url = https://github.com/glfw/glfw.git
-	commit = 6ed5294223fec513c3b1e95f1857b3104e2e9b86
 [submodule "bin2c"]
 	path = bin2c
 	url = https://github.com/gwilymk/bin2c.git
-	commit = 598395c23508bd4a2c916bfdab8c04a101abc62e
