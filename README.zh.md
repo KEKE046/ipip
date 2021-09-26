@@ -1,16 +1,14 @@
-# ipip: Realtime Signal Monitor
+# ipip: 实时信号显示器
 
-[中文README](README.zh.md)
+ipip是一个**高性能**的**实时**信号显示器。
 
-ipip is a **high performance**, **real-time** signal monitor.
+python和matlab仅需要**一行**代码就可以与ipip交互。
 
-You can interact with ipip within only **one line of code** in python or matlab.
-
-## Preview
+## 显示效果
 
 ![](ipip.gif)
 
-**Python Code:**
+**Python 代码:**
 
 ```python
 import requests, json, time, math
@@ -38,7 +36,7 @@ while True:
     time.sleep(0.01)
 ```
 
-**MATLAB Code:**
+**MATLAB 代码:**
 
 ```matlab
 url='http://127.0.0:1132';
@@ -60,20 +58,20 @@ while true
 end
 ```
 
-*Hint*: JSON values of type `null` can be recognised by IPIP. ipip will not add data points for values of NULL. This is useful for data that sometimes needs to be output and sometimes does not need to be output.
+*提示*：JSON的null类型是可以识别的。你可以给某个图的数据赋值为null，IPIP会将其忽略。对于一些时而需要输出，时而不需要输出的数据，这个特性非常有用。
 
 ## Binaries
 
-Please see the [Release Page](https://github.com/KEKE046/ipip/releases)
+你可以在 [Release 页面](https://github.com/KEKE046/ipip/releases) 中找到编译好的可执行文件。
 
-## Run
+## 运行
 
 ```bash
-ipip #run on port 1132
-ipip 2333 # run on port 2333
+ipip # 默认在 1132 端口运行
+ipip 2333 # 指定在 2333 端口运行
 ```
 
-## Build
+## 编译
 
 ```bash
 git clone https://github.com/KEKE046/ipip.git
@@ -82,9 +80,9 @@ git submodule init
 git submodule update
 mkdir build && cd build
 cmake --build . --config Release
-sudo cmake --install . # In windows, you needn't execute this command. you can find the executable file in folder build/bin
+sudo cmake --install . # windows上，你不需要执行这句命令，应该直接去build/bin里找ipip.exe，
 ```
 
-## Issues
+## 建议和意见
 
-If you want any new features or have found any bugs, please put them in the [issue](https://github.com/KEKE046/ipip/issues/new).
+如果你有什么想要的新功能或者发现了什么新bug，请在[issue](https://github.com/KEKE046/ipip/issues/new)页面里告知我们。
