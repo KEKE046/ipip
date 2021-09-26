@@ -60,7 +60,8 @@ cd ipip
 git submodule init
 git submodule update
 mkdir build && cd build
-cmake --build . && sudo cmake --install .
+cmake --build . --config Release
+sudo cmake --install . # In windows, you needn't execute this command. you can find the executable file in folder build/bin
 ```
 
 ## Run

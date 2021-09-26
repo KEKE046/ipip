@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(ipip VERSION 0.0.0)
+project(ipip VERSION 1.0.0)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
@@ -14,15 +14,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 if(${MSVC})
     if(${CMAKE_BUILD_TYPE} MATCHES "Release")
         add_compile_options(/O2)
-        # target_compile_options(ipip PRIVATE /O2)
-        # target_compile_options(implot PRIVATE /O2)
-        # target_compile_options(imgui PRIVATE /O2)
     endif()
 else()
     add_compile_options(-O3)
-    # target_compile_options(ipip PRIVATE -O3)
-    # target_compile_options(implot PRIVATE -O3)
-    # target_compile_options(imgui PRIVATE -O3)
 endif()
 
 find_package(OpenGL REQUIRED)
@@ -50,9 +44,8 @@ target_include_directories(implot PUBLIC implot imgui)
 target_link_libraries(implot imgui)
 
 add_subdirectory(jsoncpp EXCLUDE_FROM_ALL)
-if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-    include_directories(jsoncpp/include)
-endif()
+include_directories(jsoncpp/include)
+
 add_subdirectory(cpp-httplib EXCLUDE_FROM_ALL)
 include_directories(cpp-httplib)
 
@@ -64,11 +57,7 @@ add_custom_command(OUTPUT help.c COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/bin2c
 aux_source_directory(src IPIP_SRC)
 add_executable(ipip ${IPIP_SRC} help.c)
 
-if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 target_link_libraries(ipip PRIVATE implot jsoncpp_static)
-else ()
-target_link_libraries(ipip PRIVATE implot jsoncpp)
-endif ()
 
 add_custom_target(run ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/ipip DEPENDS ipip httplib::httplib)
 
