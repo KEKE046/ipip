@@ -15,6 +15,7 @@ sess = requests.Session()
 while True:
     tm = time.time()
     sess.post(url, data=json.dumps({
+        # The time keyword must be present in the data
         'time': tm,
         'fig1': {
             'sin': math.sin(tm),
@@ -24,6 +25,7 @@ while True:
             'tan': math.tan(tm),
         },
         'fig3': {
+            # plot heatmap
             'data': [math.sin(tm), math.cos(tm), math.sin(tm * 2), math.cos(tm * 2)]
         }
     }))
@@ -37,12 +39,14 @@ url='http://127.0.0:1132';
 while true
     time = now * 60 * 60 * 24;
     data = struct(...
+        % The time keyword must be present in the data
         'time', time,...
         'fig1', struct(...
             'sin', sin(time),...
             'cos', cos(time)...
         )...,
         'fig2', struct('tan', tan(time)),...
+        % plot heatmap
         'fig3', struct('data', [sin(time) cos(time) sin(time*2) cos(time*2)]),...
     );
     webwrite(url, data);
@@ -50,9 +54,20 @@ while true
 end
 ```
 
-You can set value to `null` to avoid subplot update.
+*Hint*: JSON values of type `null` can be recognised by IPIP. ipip will not add data points for values of NULL.
 
-## Install
+## Binaries
+
+Please see the [Release Page](https://github.com/KEKE046/ipip/releases)
+
+## Run
+
+```bash
+ipip #run on port 1132
+ipip 2333 # run on port 2333
+```
+
+## Build
 
 ```bash
 git clone https://github.com/KEKE046/ipip.git
@@ -62,11 +77,4 @@ git submodule update
 mkdir build && cd build
 cmake --build . --config Release
 sudo cmake --install . # In windows, you needn't execute this command. you can find the executable file in folder build/bin
-```
-
-## Run
-
-```bash
-ipip #run on port 1132
-ipip 2333 # run on port 2333
 ```
